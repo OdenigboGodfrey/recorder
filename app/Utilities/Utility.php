@@ -5,6 +5,7 @@ use App\Mail\Mailer;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use GuzzleHttp\Client;
+use Carbon\Carbon;
 
 class Utility
 {
@@ -111,6 +112,22 @@ class Utility
                 'status'  => self::$error,
                 'message' => $ex->getMessage()
             ];
+        }
+    }
+
+    public static function calc_due_days($_date) {
+        try {
+            $date = Carbon::parse($_date);
+            $now = Carbon::now();
+
+            // return $date->diffInMinutes($now);
+            //dd($date, $now);
+            //dd($now->diffInDays($date));
+            $diff = $date->diffInDays($now);
+            return $diff <= 0 ? 1 : $diff;
+        }
+        catch(\Exception $ex) {
+            
         }
     }
 

@@ -195,4 +195,42 @@ class AppUtilityAddons
 
         return $response;
     }
+
+    public static  function close_todo(&$response) {
+        if ($response['data']['key'] != AppUtility::$instance_keys['todo']) {
+            return $response;
+        }
+
+        if ($response['status'] < Utility::$neutral) {
+            // error occurred in one of senior functions
+            return $response;
+        }
+
+        if (!array_key_exists('type', $response['data'])) {
+            $response['status'] = Utility::$negative;
+            $response['message'] = \get_api_string('invalid_action', 'Title not supplied');
+            return $response;
+        }
+        else {
+            if (strtolower($response['data']['type']) != "c" && strtolower($response['data']['type']) != "d") {
+                $response['status'] = Utility::$negative;
+                $response['message'] = \get_api_string('invalid_action', 'Transaction Type is not valid');
+                return $response;
+            }
+            else {
+                $response['data']['type'] = strtolower($response['data']['type']);
+            }
+        }
+
+        try {
+            $user = auth()->guard('api-user')->user();
+            $response['data']['user_id'] = $user->id;
+            $response['data']['date_created'] = Carbon::today()->toDateString();
+        }
+        catch (\Exception $ex) {
+            self::treat_exception($response, $ex);
+        }
+
+        return $response;
+    }
 }

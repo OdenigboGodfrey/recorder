@@ -53,6 +53,19 @@ Route::namespace("API")->group(function () {
     Route::group(['prefix' => 'v1'], function(){
         Route::group(['prefix' => 'app'], function() {
             Route::get('/get_items_by_due_date_constraint', 'TodoController@get_items_by_timer_constraint')->name('api.app.get_items_by_timer_constraint')->middleware('auth:api-user');
+            Route::get('/mark_as_done', 'TodoController@mark_as_done')->name('api.app.mark_as_done')->middleware('auth:api-user');
+            Route::post('/delete_todo', 'TodoController@delete_todo')->name('api.app.delete_todo')->middleware('auth:api-user');
+            Route::get('/get_closed_items', 'TodoController@get_closed_items')->name('api.app.get_closed_items')->middleware('auth:api-user');
+            Route::get('/get_done_pending_ratio', 'TodoController@get_done_pending_ratio')->name('api.app.get_done_pending_ratio')->middleware('auth:api-user');
+            
+            
+        });
+    });
+});
+
+Route::namespace("API")->group(function () {
+    Route::group(['prefix' => 'v1'], function(){
+        Route::group(['prefix' => 'app'], function() {
             Route::get('/get_fund_tracker_by_date', 'InternalController@get_fund_tracker_by_date')->name('api.get_fund_tracker_by_date')->middleware('auth:api-user');
             
         });
