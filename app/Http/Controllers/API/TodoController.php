@@ -8,15 +8,19 @@ use App\Models\Todo;
 use App\Utilities\AppUtility;
 use App\Utilities\Utility;
 use Carbon\Carbon;
+use App\Base\TodoBase;
+use App\Models\TodoPoint;
 
 class TodoController extends Controller
 {
     public $appUtility;
     public $utility;
+    public $base;
     
     function __construct() {
         
         $this->appUtility = new AppUtility();
+        $this->base = new TodoBase();
     }
 
     public function get_items_by_timer_constraint(Request $request) {
@@ -74,6 +78,43 @@ class TodoController extends Controller
         }
     }
 
+    public function get_point_from_all_done(Request $request) {
+        try {
+            $data = $request->all();
+            $key = $data['key'];
+            $result = [];
+            $user = auth()->guard('api-user')->user();
+
+            // category pending 
+            $todo = Todo::where('user_id', $user->id)->where('status', Utility::$positive)->get();
+            
+            foreach($todo as $item) {
+                $category = Todo::where('user_id', $user->id)->where('category', $item->category)->where('status', Utility::$positive)->get();
+                //dd($this->base->gather_point(2));
+                //dd($item->category);
+                $_point = $this->base->gather_point(count($category));
+                //dd($_point);
+                //$_point = TodoBase::gather_point($todo, count($category));
+                
+                //save point
+                $todo_pointer = TodoPoint::create([
+                    'amount' => $_point,
+                    'user_id' => $user->id,
+                    'type' => 'C',
+                ]);
+            }
+
+            
+            
+            $result = $todo;
+            return \prepare_json(Utility::$neutral, ['key' => $key, $key => $result, 'todo_pointer' => $todo_pointer], \get_api_string('generic_ok'));
+        }
+        catch (\Exception $ex) {
+            return \prepare_json(Utility::$error, [], \get_api_string('error_occurred').$ex->getMessage(), Utility::$_500);
+        }
+    }
+
+
     public function mark_as_done(Request $request) {
         try {
             $data = $request->all();
@@ -82,26 +123,38 @@ class TodoController extends Controller
             $user = auth()->guard('api-user')->user();
 
             
-            $builder = $this->appUtility->raw_builder($data);
-            if ($builder['status'] < Utility::$neutral) {
-                return \prepare_json($builder['status'], [], $builder['message']);
-            }
             if (!array_key_exists('id', $data)) {
                 return \prepare_json(Utility::$negative, ['key' => $key, $key => $result], \get_api_string('invalid_action', 'Id is required'));
             }
             
-            $records = $builder['data'];
             $todo = Todo::where('id',$data['id'])->where('user_id',$user->id)->first();
             if ($todo == null) {
                 return \prepare_json(Utility::$negative, ['key' => $key, $key => $result], \get_api_string('invalid_action'));
             }
             
-            $todo->deleted_at = Carbon::now();
+            // category pending 
+            $category = Todo::where('category', $todo->category)->where('status', Utility::$neutral)->get();
+
+            //$todo->deleted_at = Carbon::now();
             $todo->status = Utility::$positive;
             $todo->save();
+
+            $_point = $this->base->gather_point(count($category));
+            if ($_point['status'] == Utitlity::$positive) {
+                //save point
+                $todo_pointer = TodoPoint::create([
+                    'amount' => $_point,
+                    'user_id' => $user->id,
+                    'type' => 'C',
+                ]);
+            }
+            else {
+                // error happened with point
+            }
+            
             
             $result = $todo;
-            return \prepare_json(Utility::$neutral, ['key' => $key, $key => $result], \get_api_string('generic_ok'));
+            return \prepare_json(Utility::$neutral, ['key' => $key, $key => $result, 'todo_pointer' => $todo_pointer], \get_api_string('generic_ok'));
         }
         catch (\Exception $ex) {
             return \prepare_json(Utility::$error, [], \get_api_string('error_occurred').$ex->getMessage(), Utility::$_500);
@@ -161,15 +214,16 @@ class TodoController extends Controller
             }
             
             $records = $builder['data'];
-            $records = Todo::where('user_id',$user->id)->select('id', 'status', 'deleted_at','created_at', 'user_id')->where('status', Utility::$positive)->withTrashed()->get()->groupBy(function($date) {
-                return Carbon::parse($date->deleted_at)->format('d'); // grouping by years
+            $records = Todo::where('user_id',$user->id)->select('id', 'status', 'updated_at','created_at', 'user_id')->where('status', Utility::$positive)->withTrashed()->get()->groupBy(function($date) {
+                return Carbon::parse($date->updated_at)->format('Y.m.d'); // grouping by years
                 //return Carbon::parse($date->created_at)->format('m'); // grouping by months
             });
+
             
             // get individual total    
             foreach ($records as $item) {
                 $temp = [
-                    'date' => Carbon::parse($item[0]->deleted_at)->format('Y-m-d'),
+                    'date' => Carbon::parse($item[0]->updated_at)->format('Y-m-d'),
                     'count' => count($item),
                 ];
                 array_push($result, $temp) ;
@@ -202,7 +256,7 @@ class TodoController extends Controller
             }
             
             $records = Todo::where('user_id', $user->id)->where('status', Utility::$positive)->withTrashed()->get();
-            $pending_records = Todo::where('user_id', $user->id)->where('status', '!=',Utility::$neutral)->withTrashed()->get();
+            $pending_records = Todo::where('user_id', $user->id)->where('status', Utility::$neutral)->withTrashed()->get();
             $deleted_records = Todo::where('user_id', $user->id)->where('status',Utility::$negative)->withTrashed()->get();
             
             $result  = [
@@ -217,4 +271,6 @@ class TodoController extends Controller
             return \prepare_json(Utility::$error, [], \get_api_string('error_occurred').$ex->getMessage(), Utility::$_500);
         }
     }
+
+    
 }
