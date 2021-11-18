@@ -13,7 +13,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        Commands\CreateItem::class,
+        //Commands\CreateItem::class,
+        Commands\CompoundPoint::class,
     ];
 
     /**

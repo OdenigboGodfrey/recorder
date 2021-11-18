@@ -43,7 +43,7 @@ class AppUtility extends Controller
         ]);
     }
 
-    private static function prepare_initialization_data($data) {
+    public static function prepare_initialization_data($data) {
         $response = ['status' => Utility::$neutral, 'data' => $data, 'message'=> '', 'extra_data' => []];
 
         return $response;

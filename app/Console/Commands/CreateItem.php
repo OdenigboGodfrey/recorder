@@ -51,7 +51,9 @@ class CreateItem extends Command
             'status' => '-1',
             'deleted_at' => '2021-10-30 12:19:32'
         ];
-        if (Todo::create($todo)) {
+        $todo = Todo::create($todo);
+        //if ($todo) {
+        if (false) {
             echo 'Todo created';
         }
         else {
