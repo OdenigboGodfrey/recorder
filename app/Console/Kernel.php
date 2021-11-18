@@ -25,7 +25,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('todo:new')->everyMinute();
+        //$schedule->command('todo:new')->everyMinute();
+        $schedule->command('todo:compound_point')->monthly();
     }
 
     /**
